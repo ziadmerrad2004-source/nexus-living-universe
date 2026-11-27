@@ -89,3 +89,23 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 .galaxy-head:after{content:"";position:absolute;width:240px;height:240px;right:-100px;top:-130px;border-radius:50%;background:radial-gradient(circle,rgba(145,155,255,.18),transparent 70%);pointer-events:none}
 @media(max-width:600px){.solar-system-panel{padding:15px 10px}.system-heading{align-items:flex-start;flex-direction:column;gap:7px}#solar-system{height:270px}}
 @media(prefers-reduced-motion:reduce){#solar-system{animation:none}}
+
+
+/* NEXUS immersive 3D flight interface */
+.flight-stage{height:calc(100svh - 78px);min-height:620px;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 45%,#111c3c 0%,#050914 64%,#02040b 100%);isolation:isolate;cursor:crosshair}
+#space-flight{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;outline:none}
+.flight-stage:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(3,6,17,.45),transparent 18%,transparent 72%,rgba(3,6,17,.7));z-index:1}
+.flight-hud{position:absolute;z-index:2;top:30px;left:0;right:0;text-align:center;pointer-events:none;text-shadow:0 2px 18px #000}
+.flight-level{font:600 12px "Space Grotesk",sans-serif;letter-spacing:.34em;color:#c4ceff}
+.flight-sub{margin-top:12px;color:#d9e2ff;font:500 clamp(15px,2vw,22px) "Space Grotesk","Noto Sans Arabic",sans-serif}
+.flight-controls{margin:14px auto 0;max-width:90%;color:#8e9abd;font-size:10px;letter-spacing:.13em;line-height:1.8}
+.flight-reticle{position:absolute;z-index:2;left:50%;top:50%;width:22px;height:22px;transform:translate(-50%,-50%);border:1px solid rgba(193,210,255,.35);border-radius:50%;pointer-events:none;opacity:.55}
+.flight-reticle span{position:absolute;left:50%;top:50%;width:3px;height:3px;transform:translate(-50%,-50%);border-radius:50%;background:#dce8ff;box-shadow:0 0 10px #9ebcff}
+.flight-stats{position:absolute;z-index:2;bottom:25px;left:clamp(16px,4vw,55px);display:flex;gap:22px;pointer-events:none}
+.flight-stats>span .stats{display:flex;gap:0;margin:0}
+.flight-stats .stats div{min-width:52px}
+.flight-stats .stats strong{font-size:17px}
+.flight-stats .stats span{font-size:8px}
+.flight-stage:focus-within{outline:none}
+@media(max-width:700px){.flight-stage{height:calc(100svh - 65px);min-height:520px}.flight-hud{top:20px;padding:0 16px}.flight-controls{font-size:8px;letter-spacing:.04em}.flight-stats{bottom:14px;left:14px;gap:10px}.flight-stats .stats div{min-width:42px}.flight-stats .stats strong{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.flight-stage:after{background:linear-gradient(180deg,rgba(3,6,17,.5),transparent 30%,rgba(3,6,17,.6))}}
