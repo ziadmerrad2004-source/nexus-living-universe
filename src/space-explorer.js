@@ -98,7 +98,7 @@ export class NexusSpaceExplorer {
       if(i===5){const ring=new THREE.Mesh(new THREE.TorusGeometry(4.1,.16,8,90),new THREE.MeshBasicMaterial({color:0xdac8a0,transparent:true,opacity:.65}));ring.position.copy(planet.position);ring.rotation.x=Math.PI/2.4;this.add(ring);}
       this.add(planet);this.orbits.push({planet,radius,speed:.12/(i*.45+1),phase:i*1.2});
     }
-    this.camera.position.set(0,24,105);this.yaw=0;this.pitch=-.12;this.sceneName="system";
+    this.camera.position.set(0,76,112);this.yaw=0;this.pitch=-.12;this.sceneName="system";
   }
   makePlanet(index=2,name="Azure") {
     this.clearWorld();this.add(this.starField(2400,950));
@@ -109,19 +109,19 @@ export class NexusSpaceExplorer {
       const c=new THREE.Color(n>.28?0x8eaa78:n>-.05?0x536e54:0x254b72);colors.push(c.r,c.g,c.b);
     }
     geo.setAttribute("color",new THREE.Float32BufferAttribute(colors,3));
-    const surface=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1}));surface.userData={kind:"planet-surface",name};this.add(surface);
+    const surface=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide}));surface.userData={kind:"planet-surface",name};this.add(surface);
     const atmosphere=new THREE.Mesh(new THREE.SphereGeometry(radius*1.035,64,48),new THREE.MeshBasicMaterial({color:0x77bfff,transparent:true,opacity:.12,side:THREE.BackSide}));this.add(atmosphere);
     const clouds=new THREE.Mesh(new THREE.SphereGeometry(radius*1.008,64,48),new THREE.MeshBasicMaterial({color:0xe5f3ff,transparent:true,opacity:.055,wireframe:true}));this.add(clouds);
     this.camera.position.set(0,7,78);this.yaw=0;this.pitch=-.08;this.sceneName="planet";this.currentPlanet={index,name};
   }
   enterGalaxy(){this.makeGalaxyInterior();this.flyTo(new THREE.Vector3(0,12,36),new THREE.Vector3(0,0,-100));this.showHud(this.labels.galaxy,this.labels.systemHint);}
-  enterSystem(star){this.currentStar=star;this.makeSystem(star);this.flyTo(new THREE.Vector3(0,22,105),new THREE.Vector3(0,0,0));this.showHud(this.labels.system,star?.title||this.labels.systemHint);}
+  enterSystem(star){this.currentStar=star;this.makeSystem(star);this.flyTo(new THREE.Vector3(0,76,112),new THREE.Vector3(0,0,0));this.showHud(this.labels.system,star?.title||this.labels.systemHint);}
   enterPlanet(index,name){this.previous="system";this.makePlanet(index,name);this.flyTo(new THREE.Vector3(0,6,76),new THREE.Vector3(0,0,0));this.showHud(this.labels.planet,name+" · "+this.labels.back);}
-  flyTo(position,look){this.targetCamera=position.clone();this.targetLook=look.clone();}
+  flyTo(position,look){this.targetCamera=position.clone();this.targetLook=look.clone();const d=look.clone().sub(position).normalize();this.yaw=Math.atan2(d.x,-d.z);this.pitch=Math.asin(THREE.MathUtils.clamp(d.y,-1,1));}
   showHud(title,sub){if(this.hud)this.hud.innerHTML=`<div class="flight-level">${title}</div><div class="flight-sub">${sub}</div><div class="flight-controls">${this.labels.hint}</div>`;}
   bind(){
-    this.onDown=e=>{this.dragging=true;this.lastX=e.clientX;this.lastY=e.clientY;this.canvas.setPointerCapture?.(e.pointerId);};
-    this.onMove=e=>{if(!this.dragging)return;const dx=e.clientX-this.lastX,dy=e.clientY-this.lastY;this.lastX=e.clientX;this.lastY=e.clientY;this.yaw-=dx*.003;this.pitch=Math.max(-1.35,Math.min(1.35,this.pitch-dy*.003));};
+    this.onDown=e=>{this.dragging=true;this.dragMoved=0;this.lastX=e.clientX;this.lastY=e.clientY;this.canvas.setPointerCapture?.(e.pointerId);};
+    this.onMove=e=>{if(!this.dragging)return;const dx=e.clientX-this.lastX,dy=e.clientY-this.lastY;this.lastX=e.clientX;this.lastY=e.clientY;this.dragMoved=(this.dragMoved||0)+Math.abs(dx)+Math.abs(dy);this.yaw-=dx*.003;this.pitch=Math.max(-1.35,Math.min(1.35,this.pitch-dy*.003));};
     this.onUp=()=>{this.dragging=false;};
     this.onWheel=e=>{e.preventDefault();const dir=this.camera.getWorldDirection(new THREE.Vector3());this.camera.position.addScaledVector(dir,Math.sign(e.deltaY)*Math.min(24,Math.abs(e.deltaY)*.035));};
     this.onKeyDown=e=>{this.keys.add(e.key.toLowerCase());if(e.key==="Escape"||e.key==="Backspace"){e.preventDefault();this.goBack();}};
