@@ -56,7 +56,7 @@ export class NexusSpaceExplorer {
     if(interactive){const hit=new THREE.Mesh(new THREE.SphereGeometry(49,16,16),new THREE.MeshBasicMaterial({visible:false}));hit.userData={kind:"galaxy"};group.add(hit);}
     this.add(group); return group;
   }
-  makeUniverse() {
+  makeUniverse(preserveCamera = false) {
     this.clearWorld(); this.add(this.starField(9000,1900));
     const galaxy=this.makeGalaxy(new THREE.Vector3(0,0,-120),1.35,true); galaxy.userData.kind="galaxy-root";
     const positions=[[-145,45,-235],[170,-55,-310],[80,95,-470],[-230,-80,-560]];
@@ -64,7 +64,7 @@ export class NexusSpaceExplorer {
       const g=this.makeGalaxy(new THREE.Vector3(...p),.25+i*.045,true);
       const label=new THREE.Object3D();label.position.set(...p);label.userData.kind="galaxy";
     });
-    this.camera.position.set(0,8,100);this.yaw=0;this.pitch=-.035;this.sceneName="universe";
+    if(!preserveCamera)this.camera.position.set(0,8,100);this.yaw=0;this.pitch=-.035;this.sceneName="universe";
   }
   makeGalaxyInterior(star) {
     this.clearWorld(); this.add(this.starField(7500,850));
@@ -79,7 +79,7 @@ export class NexusSpaceExplorer {
     });
     const hub=new THREE.Mesh(new THREE.SphereGeometry(4,24,24),new THREE.MeshBasicMaterial({color:0xffd9a2}));
     hub.position.set(0,0,-100);hub.userData={kind:"system",star:star||{id:"nexus-core",title:"NEXUS Core",nickname:"NEXUS"}};this.add(hub);
-    this.camera.position.set(0,12,35);this.yaw=0;this.pitch=-.12;this.sceneName="galaxy";
+    this.yaw=0;this.pitch=-.12;this.sceneName="galaxy";
   }
   makeSystem(star) {
     this.clearWorld();this.add(this.starField(4500,620));this.currentStar=star;
@@ -98,7 +98,7 @@ export class NexusSpaceExplorer {
       if(i===5){const ring=new THREE.Mesh(new THREE.TorusGeometry(4.1,.16,8,90),new THREE.MeshBasicMaterial({color:0xdac8a0,transparent:true,opacity:.65}));ring.position.copy(planet.position);ring.rotation.x=Math.PI/2.4;this.add(ring);}
       this.add(planet);this.orbits.push({planet,radius,speed:.12/(i*.45+1),phase:i*1.2});
     }
-    this.camera.position.set(0,76,112);this.yaw=0;this.pitch=-.12;this.sceneName="system";
+    this.yaw=0;this.pitch=-.12;this.sceneName="system";
   }
   makePlanet(index=2,name="Azure") {
     this.clearWorld();this.add(this.starField(2400,950));
@@ -112,7 +112,7 @@ export class NexusSpaceExplorer {
     const surface=new THREE.Mesh(geo,new THREE.MeshStandardMaterial({vertexColors:true,roughness:1,side:THREE.DoubleSide}));surface.userData={kind:"planet-surface",name};this.add(surface);
     const atmosphere=new THREE.Mesh(new THREE.SphereGeometry(radius*1.035,64,48),new THREE.MeshBasicMaterial({color:0x77bfff,transparent:true,opacity:.12,side:THREE.BackSide}));this.add(atmosphere);
     const clouds=new THREE.Mesh(new THREE.SphereGeometry(radius*1.008,64,48),new THREE.MeshBasicMaterial({color:0xe5f3ff,transparent:true,opacity:.055,wireframe:true}));this.add(clouds);
-    this.camera.position.set(0,7,78);this.yaw=0;this.pitch=-.08;this.sceneName="planet";this.currentPlanet={index,name};
+    this.yaw=0;this.pitch=-.08;this.sceneName="planet";this.currentPlanet={index,name};
   }
   enterGalaxy(){this.makeGalaxyInterior();this.flyTo(new THREE.Vector3(0,12,36),new THREE.Vector3(0,0,-100));this.showHud(this.labels.galaxy,this.labels.systemHint);}
   enterSystem(star){this.currentStar=star;this.makeSystem(star);this.flyTo(new THREE.Vector3(0,76,112),new THREE.Vector3(0,0,0));this.showHud(this.labels.system,star?.title||this.labels.systemHint);}
@@ -138,7 +138,7 @@ export class NexusSpaceExplorer {
   goBack(){
     if(this.sceneName==="planet"){this.enterSystem(this.currentStar);return;}
     if(this.sceneName==="system"){this.enterGalaxy();return;}
-    if(this.sceneName==="galaxy"){this.makeUniverse();this.showHud(this.labels.universe,this.labels.choose);return;}
+    if(this.sceneName==="galaxy"){this.makeUniverse(true);this.flyTo(new THREE.Vector3(0,8,100),new THREE.Vector3(0,0,-120));this.showHud(this.labels.universe,this.labels.choose);return;}
   }
   resize(){const w=this.canvas.clientWidth,h=this.canvas.clientHeight;if(!w||!h)return;this.camera.aspect=w/h;this.camera.updateProjectionMatrix();this.renderer.setSize(w,h,false);}
   animate(){
