@@ -50,7 +50,7 @@ function drawUniverse(){
    for(let j=0;j<=100;j++){const r=j/100,ang=arm*Math.PI/2+r*5.7+t*.035,x=Math.cos(ang)*r*scale,y=Math.sin(ang)*r*scale*.43;if(j===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
    ctx.strokeStyle="rgba(155,173,255,.12)";ctx.lineWidth=scale*.075;ctx.lineCap="round";ctx.stroke();
   }
-  for(const p of galaxy){const ang=p.angle+t*.035,x=Math.cos(ang)*p.r*scale,y=Math.sin(ang)*p.r*scale*.43;const alpha=(.22+p.z*.65)*(1-p.r*.35);ctx.beginPath();ctx.arc(x,y,p.size*(.8+.2*Math.sin(t*1.4+p.angle)),0,p.size*6.28);ctx.fillStyle=p.hue>.82?"rgba(255,218,190,"+alpha+")":"rgba(202,213,255,"+alpha+")";ctx.fill();}
+  for(const p of galaxy){const ang=p.angle+t*.035,x=Math.cos(ang)*p.r*scale,y=Math.sin(ang)*p.r*scale*.43;const alpha=(.22+p.z*.65)*(1-p.r*.35);ctx.beginPath();ctx.arc(x,y,p.size*(.8+.2*Math.sin(t*1.4+p.angle)),0,Math.PI*2);ctx.fillStyle=p.hue>.82?"rgba(255,218,190,"+alpha+")":"rgba(202,213,255,"+alpha+")";ctx.fill();}
   const core=ctx.createRadialGradient(0,0,0,0,0,scale*.19);core.addColorStop(0,"rgba(255,255,238,.98)");core.addColorStop(.12,"rgba(255,220,174,.78)");core.addColorStop(.42,"rgba(255,177,145,.18)");core.addColorStop(1,"rgba(255,177,145,0)");ctx.fillStyle=core;ctx.beginPath();ctx.arc(0,0,scale*.19,0,Math.PI*2);ctx.fill();
   ctx.restore();
   // Distant solar systems: tiny suns with orbiting planets, distinct from the galaxy disk.
@@ -95,5 +95,5 @@ app.addEventListener("submit",async e=>{e.preventDefault();try{const id=e.target
 function reportModal(type,id){modal(t("report"),`<form id="report-form" class="form"><input type="hidden" name="type" value="${type}"><input type="hidden" name="target" value="${esc(id)}">${field(t("nickname"),"nickname","Anonymous",false)}<label>${t("reason")}<textarea name="reason" required maxlength="500"></textarea></label><button class="primary">${t("submit")}</button></form>`);}
 async function doSearch(){const q=$("#search")?.value.trim();if(!q)return;state.query=q;try{const r=await state.nx.search(q);const items=(r.stars||[]).map(s=>`<button class="star-card" data-star="${esc(s.id)}"><span class="star-dot"></span><span class="card-title">${esc(s.title||"Untitled signal")}</span><span class="card-body">${esc(s.snippet)}</span><span class="card-meta">${esc(s.nickname)}</span></button>`);$("#signal-grid").innerHTML=items.join("")||`<div class="empty">${t("nothing")}</div>`;}catch(e){toast(e.message);}}
 app.addEventListener("change",async e=>{if(e.target.id==="import-tokens"){try{const obj=JSON.parse(await e.target.files[0].text());if(!obj||typeof obj!=="object"||Array.isArray(obj))throw new Error("Invalid token file");const current=JSON.parse(localStorage.getItem("nexus:tokens:v1")||"{}");localStorage.setItem("nexus:tokens:v1",JSON.stringify({...current,...obj}));toast("Access tokens imported.");$("#modal").remove();}catch(err){toast(err.message);}}});
-window.addEventListener("resize",()=>drawUniverse());
+window.addEventListener("resize",()=>{drawUniverse();drawSolarSystem();});
 init();
