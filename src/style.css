@@ -78,3 +78,14 @@ button:focus-visible,a:focus-visible,input:focus-visible,textarea:focus-visible{
 @media(max-width:900px){.hero{min-height:0;padding-top:42px;padding-bottom:55px}.universe-stage{height:clamp(270px,58vw,420px)}}
 @media(max-width:600px){.hero{gap:22px}.universe-stage{height:270px}.hero h1{font-size:clamp(38px,11vw,48px)}.hero-actions{flex-wrap:wrap}.stats{justify-content:space-between}.star-card{min-height:155px}.stage-caption{font-size:9px}}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}body:before{animation:none}.universe-stage:before,.universe-stage:after{animation:none}}
+
+/* Realistic galaxy + orbital system scenes */
+.solar-system-panel{position:relative;margin:28px 0 38px;padding:20px 22px 15px;border:1px solid rgba(170,188,255,.2);border-radius:20px;overflow:hidden;background:radial-gradient(ellipse at 50% 48%,rgba(69,83,157,.2),rgba(10,16,34,.82) 72%);box-shadow:inset 0 0 70px rgba(95,115,225,.08),0 18px 55px rgba(0,0,0,.2)}
+.system-heading{display:flex;justify-content:space-between;align-items:center;gap:12px;position:relative;z-index:1}
+.system-heading span{font-size:9px;letter-spacing:.15em;color:#8593b8}
+#solar-system{display:block;width:100%;height:clamp(280px,38vw,440px);margin:0 auto}
+.system-note{margin:0;text-align:center;color:#7887aa;font-size:11px;letter-spacing:.04em}
+.galaxy-head{position:relative;overflow:hidden}
+.galaxy-head:after{content:"";position:absolute;width:240px;height:240px;right:-100px;top:-130px;border-radius:50%;background:radial-gradient(circle,rgba(145,155,255,.18),transparent 70%);pointer-events:none}
+@media(max-width:600px){.solar-system-panel{padding:15px 10px}.system-heading{align-items:flex-start;flex-direction:column;gap:7px}#solar-system{height:270px}}
+@media(prefers-reduced-motion:reduce){#solar-system{animation:none}}
