@@ -4,7 +4,7 @@ import "./style.css";
 
 const $ = (s, root=document) => root.querySelector(s);
 const app = $("#app");
-const state = { sb:null, nx:null, stars:[], selected:null, replies:[], planets:[], universeRAF:null, lang:(navigator.language||"en").toLowerCase().startsWith("ar")?"ar":"en", unsub:null, scene:"universe", query:"" };
+const state = { sb:null, nx:null, stars:[], selected:null, replies:[], planets:[], universeRAF:null, systemRAF:null, lang:(navigator.language||"en").toLowerCase().startsWith("ar")?"ar":"en", unsub:null, scene:"universe", query:"" };
 const copy = {
  en:{tag:"A LIVING UNIVERSE",title:"Every voice becomes a star.",sub:"Leave a thought in the universe. Discover what others have left behind.",explore:"Explore universe",create:"Create a star",search:"Search the universe",stars:"Stars",replies:"Replies",planets:"Planets",galaxies:"Galaxies",latest:"Latest signals",empty:"The universe is quiet. Be the first to leave a star.",nickname:"Your name",starTitle:"Star title (optional)",message:"Write what you want the universe to remember…",launch:"Launch star",cancel:"Cancel",back:"Back to universe",send:"Send reply",replyPlaceholder:"Add a thoughtful reply…",noReplies:"No replies yet. Start the conversation.",createPlanet:"Create a private planet",planetName:"Planet name",planetNote:"Private note",passcode:"Passcode (at least 6 characters)",open:"Open galaxy",report:"Report",archive:"Archive star",edit:"Edit",save:"Save changes",close:"Close",unlock:"Unlock planet",private:"Private planet",passcodeAsk:"Enter planet passcode",owner:"Owner controls",restore:"Restore",access:"My access",export:"Export access tokens",import:"Import access tokens",copied:"Access tokens exported as JSON.",connecting:"Connecting to NEXUS…",config:"Connect your Supabase project",url:"Supabase project URL",key:"Publishable key",connect:"Connect",connected:"Connected",offline:"Could not connect. Check URL, key, and database policies.",loading:"Loading the universe…",searchResults:"Search results",nothing:"No matching signals.",created:"Your star is now part of NEXUS.",planetCreated:"Private planet created. Save your access token.",error:"Something went wrong",reply:"Reply",planet:"Planet",name:"Name",reason:"Reason for report",submit:"Submit report",deleted:"Delete reply",hide:"Hide reply",show:"Show reply",restoreStar:"Restore star",stats:"Universe signals",lang:"العربية"},
  ar:{tag:"كونٌ حيّ",title:"كل صوت يتحوّل إلى نجم.",sub:"اترك فكرة في الكون، واكتشف ما تركه الآخرون.",explore:"استكشف الكون",create:"أنشئ نجمًا",search:"ابحث في الكون",stars:"النجوم",replies:"الردود",planets:"الكواكب",galaxies:"المجرات",latest:"أحدث الإشارات",empty:"الكون هادئ الآن. كن أول من يترك نجمًا.",nickname:"اسمك",starTitle:"عنوان النجم (اختياري)",message:"اكتب ما تريد للكون أن يتذكّره…",launch:"أطلق النجم",cancel:"إلغاء",back:"العودة إلى الكون",send:"إرسال الرد",replyPlaceholder:"أضف ردًا ذا معنى…",noReplies:"لا توجد ردود بعد. ابدأ الحوار.",createPlanet:"إنشاء كوكب خاص",planetName:"اسم الكوكب",planetNote:"ملاحظة خاصة",passcode:"رمز المرور (6 أحرف على الأقل)",open:"افتح المجرة",report:"إبلاغ",archive:"أرشفة النجم",edit:"تعديل",save:"حفظ التغييرات",close:"إغلاق",unlock:"فتح الكوكب",private:"كوكب خاص",passcodeAsk:"أدخل رمز مرور الكوكب",owner:"أدوات المالك",restore:"استعادة",access:"صلاحياتي",export:"تصدير رموز الوصول",import:"استيراد رموز الوصول",copied:"تم تصدير رموز الوصول بصيغة JSON.",connecting:"جارٍ الاتصال بـ NEXUS…",config:"اربط مشروع Supabase",url:"رابط مشروع Supabase",key:"المفتاح العام",connect:"اتصال",connected:"متصل",offline:"تعذّر الاتصال. تحقق من الرابط والمفتاح وسياسات قاعدة البيانات.",loading:"جارٍ تحميل الكون…",searchResults:"نتائج البحث",nothing:"لا توجد إشارات مطابقة.",created:"أصبح نجمك الآن جزءًا من NEXUS.",planetCreated:"أُنشئ الكوكب الخاص. احتفظ برمز الوصول.",error:"حدث خطأ",reply:"رد",planet:"كوكب",name:"الاسم",reason:"سبب الإبلاغ",submit:"إرسال البلاغ",deleted:"حذف الرد",hide:"إخفاء الرد",show:"إظهار الرد",restoreStar:"استعادة النجم",stats:"إشارات الكون",lang:"English"}
@@ -25,49 +25,61 @@ function starCard(s,i){return `<button class="star-card" data-star="${esc(s.id)}
 function drawUniverse(){
  const c=$("#universe");if(!c)return;
  if(state.universeRAF)cancelAnimationFrame(state.universeRAF);
- const ctx=c.getContext("2d");
- const dpr=Math.min(window.devicePixelRatio||1,2);
- const w=c.clientWidth,h=c.clientHeight;
- c.width=Math.max(1,Math.floor(w*dpr));c.height=Math.max(1,Math.floor(h*dpr));
- ctx.setTransform(dpr,0,0,dpr,0,0);
- let seed=42;
- const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
- const dust=Array.from({length:230},()=>({x:rand()*w,y:rand()*h,r:rand()*1.5+.35,phase:rand()*Math.PI*2,speed:.7+rand()*1.5}));
- const bodies=state.stars.slice(0,35).map((s,i)=>({x:(.12+((s.seed||i*.17)*.77%1))*w,y:(.12+((s.seed*1.71||i*.23)*.72%1))*h,r:2.4+(i%4)*.7,phase:i*.8}));
- const started=performance.now();
+ const ctx=c.getContext("2d");if(!ctx)return;
+ const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches,dpr=Math.min(devicePixelRatio||1,2),w=c.clientWidth,h=c.clientHeight;
+ if(!w||!h)return;c.width=Math.floor(w*dpr);c.height=Math.floor(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+ let seed=260927;const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
+ const field=Array.from({length:680},()=>({x:rand()*w,y:rand()*h,r:.25+rand()*.9,a:.16+rand()*.55,p:rand()*6.28}));
+ const galaxy=Array.from({length:1550},()=>{const arm=Math.floor(rand()*4),radius=Math.pow(rand(),.68),angle=arm*Math.PI/2+radius*5.7+(rand()-.5)*.7;return{r:radius,angle,size:.35+rand()*1.25,hue:rand(),z:rand()};});
+ const systems=[{x:w*.17,y:h*.25,s:.48},{x:w*.82,y:h*.72,s:.62},{x:w*.77,y:h*.2,s:.38}];
+ const pointer={x:0,y:0};const move=e=>{const r=c.getBoundingClientRect();pointer.x=(e.clientX-r.left)/r.width-.5;pointer.y=(e.clientY-r.top)/r.height-.5;};
+ c.addEventListener("pointermove",move,{passive:true});
+ const leave=()=>{pointer.x=0;pointer.y=0;};c.addEventListener("pointerleave",leave,{passive:true});
+ const start=performance.now();let shootAt=start+2500+rand()*3000,shoot=null;
  const frame=now=>{
-  if(!c.isConnected)return;
-  const time=(now-started)/1000;
+  if(!c.isConnected){c.removeEventListener("pointermove",move);c.removeEventListener("pointerleave",leave);return;}
+  const t=reduced?0:(now-start)/1000,ox=pointer.x*12,oy=pointer.y*9,cx=w*.5+ox,cy=h*.49+oy,scale=Math.min(w,h)*.43;
   ctx.clearRect(0,0,w,h);
-  for(const p of dust){
-   const twinkle=.45+.55*(.5+.5*Math.sin(time*p.speed+p.phase));
-   const radius=p.r*(.8+.3*Math.sin(time*1.3+p.phase));
-   ctx.beginPath();ctx.arc(p.x,p.y,radius,0,Math.PI*2);
-   ctx.fillStyle=`rgba(180,195,255,${twinkle})`;ctx.fill();
+  const bg=ctx.createRadialGradient(cx,cy,0,cx,cy,scale*1.7);bg.addColorStop(0,"rgba(111,91,220,.18)");bg.addColorStop(.38,"rgba(70,92,180,.1)");bg.addColorStop(1,"rgba(5,9,24,0)");ctx.fillStyle=bg;ctx.fillRect(0,0,w,h);
+  for(const p of field){const tw=.55+.45*Math.sin(t*(.5+p.r)+p.p);ctx.beginPath();ctx.arc(p.x+ox*.12,p.y+oy*.12,p.r,0,Math.PI*2);ctx.fillStyle="rgba(211,224,255,"+(p.a*tw)+")";ctx.fill();}
+  ctx.save();ctx.translate(cx,cy);ctx.rotate(t*.018);
+  // Soft galactic disk and luminous central bulge.
+  const disk=ctx.createRadialGradient(0,0,2,0,0,scale*1.12);disk.addColorStop(0,"rgba(255,241,210,.48)");disk.addColorStop(.08,"rgba(255,207,157,.3)");disk.addColorStop(.28,"rgba(157,139,255,.17)");disk.addColorStop(.62,"rgba(95,128,229,.07)");disk.addColorStop(1,"rgba(70,100,220,0)");ctx.fillStyle=disk;ctx.beginPath();ctx.ellipse(0,0,scale*1.14,scale*.49,0,0,Math.PI*2);ctx.fill();
+  for(let arm=0;arm<4;arm++){
+   ctx.beginPath();
+   for(let j=0;j<=100;j++){const r=j/100,ang=arm*Math.PI/2+r*5.7+t*.035,x=Math.cos(ang)*r*scale,y=Math.sin(ang)*r*scale*.43;if(j===0)ctx.moveTo(x,y);else ctx.lineTo(x,y);}
+   ctx.strokeStyle="rgba(155,173,255,.12)";ctx.lineWidth=scale*.075;ctx.lineCap="round";ctx.stroke();
   }
-  for(const p of bodies){
-   const pulse=.75+.35*Math.sin(time*1.7+p.phase);
-   ctx.beginPath();ctx.arc(p.x,p.y,p.r*4*pulse,0,Math.PI*2);
-   ctx.fillStyle="rgba(128,150,255,.07)";ctx.fill();
-   ctx.beginPath();ctx.arc(p.x,p.y,p.r*pulse,0,Math.PI*2);
-   ctx.fillStyle="#dbe3ff";ctx.shadowBlur=18;ctx.shadowColor="#a5b4fc";ctx.fill();ctx.shadowBlur=0;
-  }
-  // Two visible orbiting particles make the universe move even when no stars exist yet.
-  for(let i=0;i<2;i++){
-   const angle=time*(i===0?.42:-.29)+i*Math.PI;
-   const rx=w*(i===0?.29:.39),ry=h*(i===0?.19:.28);
-   const x=w/2+Math.cos(angle)*rx,y=h/2+Math.sin(angle)*ry;
-   const tailX=w/2+Math.cos(angle-.12)*rx,tailY=h/2+Math.sin(angle-.12)*ry;
-   const gradient=ctx.createLinearGradient(tailX,tailY,x,y);
-   gradient.addColorStop(0,"rgba(135,155,255,0)");gradient.addColorStop(1,"rgba(190,220,255,.9)");
-   ctx.beginPath();ctx.moveTo(tailX,tailY);ctx.lineTo(x,y);ctx.strokeStyle=gradient;ctx.lineWidth=i===0?2:1.4;ctx.stroke();
-   ctx.beginPath();ctx.arc(x,y,i===0?2.8:2,0,Math.PI*2);ctx.fillStyle="#eef3ff";ctx.shadowBlur=16;ctx.shadowColor="#a5b4fc";ctx.fill();ctx.shadowBlur=0;
-  }
-  state.universeRAF=requestAnimationFrame(frame);
+  for(const p of galaxy){const ang=p.angle+t*.035,x=Math.cos(ang)*p.r*scale,y=Math.sin(ang)*p.r*scale*.43;const alpha=(.22+p.z*.65)*(1-p.r*.35);ctx.beginPath();ctx.arc(x,y,p.size*(.8+.2*Math.sin(t*1.4+p.angle)),0,Math.PI*2);ctx.fillStyle=p.hue>.82?"rgba(255,218,190,"+alpha+")":"rgba(202,213,255,"+alpha+")";ctx.fill();}
+  const core=ctx.createRadialGradient(0,0,0,0,0,scale*.19);core.addColorStop(0,"rgba(255,255,238,.98)");core.addColorStop(.12,"rgba(255,220,174,.78)");core.addColorStop(.42,"rgba(255,177,145,.18)");core.addColorStop(1,"rgba(255,177,145,0)");ctx.fillStyle=core;ctx.beginPath();ctx.arc(0,0,scale*.19,0,Math.PI*2);ctx.fill();
+  ctx.restore();
+  // Distant solar systems: tiny suns with orbiting planets, distinct from the galaxy disk.
+  systems.forEach((s,i)=>{const x=s.x+ox*.35,y=s.y+oy*.35,r=15*s.s;for(let k=0;k<3;k++){const rr=r*(1.1+k*.72);ctx.beginPath();ctx.ellipse(x,y,rr*1.45,rr*.58,-.28,0,Math.PI*2);ctx.strokeStyle="rgba(178,194,255,.17)";ctx.lineWidth=.7;ctx.stroke();const q=t*(.34/(k+1))+(i+k)*1.8,px=x+Math.cos(q)*rr*1.45,py=y+Math.sin(q)*rr*.58;ctx.beginPath();ctx.arc(px,py,1.1+k*.38,0,Math.PI*2);ctx.fillStyle=["#9edcf4","#d8c7ff","#e8d4b1"][k];ctx.fill();}const g=ctx.createRadialGradient(x,y,0,x,y,r*2.8);g.addColorStop(0,"rgba(255,239,197,.95)");g.addColorStop(.22,"rgba(255,192,133,.35)");g.addColorStop(1,"rgba(255,192,133,0)");ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,r*2.8,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff1d5";ctx.beginPath();ctx.arc(x,y,2.2*s.s,0,Math.PI*2);ctx.fill();});
+  if(!reduced&&now>shootAt&&!shoot){shoot={x:rand()*w*.65,y:rand()*h*.45,v:7+rand()*4,life:0};shootAt=now+3500+rand()*5000;}
+  if(shoot){shoot.x+=shoot.v;shoot.y+=shoot.v*.42;shoot.life++;const alpha=Math.max(0,1-shoot.life/35),g=ctx.createLinearGradient(shoot.x-70,shoot.y-30,shoot.x,shoot.y);g.addColorStop(0,"rgba(190,210,255,0)");g.addColorStop(1,"rgba(230,240,255,"+alpha+")");ctx.strokeStyle=g;ctx.lineWidth=1.7;ctx.beginPath();ctx.moveTo(shoot.x-70,shoot.y-30);ctx.lineTo(shoot.x,shoot.y);ctx.stroke();if(shoot.life>35)shoot=null;}
+  if(!reduced)state.universeRAF=requestAnimationFrame(frame);
  };
- state.universeRAF=requestAnimationFrame(frame);
+ frame(performance.now());
 }
-function renderGalaxy(){const s=state.selected;shell(`<main class="detail"><button class="back" data-action="home">← ${t("back")}</button><div class="galaxy-head"><div class="planet-orb"></div><div><div class="eyebrow">GALAXY · ${esc(s.id)}</div><h1>${esc(s.title||"Untitled signal")}</h1><p>${esc(s.content)}</p><small>${esc(s.nickname)} · ${fmt(s.created_at)}</small></div></div><div class="detail-actions"><button class="secondary" data-action="reply-open">${t("reply")}</button><button class="secondary" data-action="planet-open">${t("createPlanet")}</button><button class="quiet" data-action="report-star">${t("report")}</button>${state.nx.tok.get("star",s.id)?`<button class="quiet" data-action="edit-star">${t("edit")}</button><button class="quiet danger" data-action="archive">${t("archive")}</button>`:""}</div><section class="detail-section"><h2>${t("replies")} <span>${state.replies.length}</span></h2><div class="reply-list">${state.replies.map(r=>`<article class="reply"><div><b>${esc(r.nickname)}</b><small>${fmt(r.created_at)}</small></div><p>${esc(r.content)}</p><div class="reply-tools">${state.nx.tok.get("reply",r.id)||state.nx.tok.get("star",s.id)?`<button data-reply="${esc(r.id)}" data-status="deleted">${t("deleted")}</button><button data-reply="${esc(r.id)}" data-status="${r.status==="hidden"?"active":"hidden"}">${r.status==="hidden"?t("show"):t("hide")}</button>`:""}<button data-action="report-reply" data-id="${esc(r.id)}">${t("report")}</button></div></article>`).join("")||`<div class="empty">${t("noReplies")}</div>`}</div></section><section class="detail-section"><h2>${t("planets")} <span>${state.planets.length}</span></h2><div class="planet-list">${state.planets.map(p=>`<button class="planet-card" data-planet="${esc(p.id)}"><span class="mini-orb"></span><b>${esc(p.name)}</b><small>${esc(p.nickname)}</small><span>↗</span></button>`).join("")||`<div class="empty">No planets discovered yet.</div>`}</div></section></main>`);}
+function drawSolarSystem(){
+ const c=$("#solar-system");if(!c)return;
+ if(state.systemRAF)cancelAnimationFrame(state.systemRAF);
+ const ctx=c.getContext("2d");if(!ctx)return;
+ const reduced=matchMedia("(prefers-reduced-motion: reduce)").matches,dpr=Math.min(devicePixelRatio||1,2),w=c.clientWidth,h=c.clientHeight;
+ if(!w||!h)return;c.width=Math.floor(w*dpr);c.height=Math.floor(h*dpr);ctx.setTransform(dpr,0,0,dpr,0,0);
+ const planets=[{r:3.2,c:"#9d9ba5",speed:1.3},{r:5,c:"#d7ad83",speed:.82},{r:5.5,c:"#75a9db",speed:.62},{r:4.2,c:"#d77b62",speed:.48},{r:10,c:"#d6b58e",speed:.25},{r:8.5,c:"#d8c49d",speed:.19},{r:7,c:"#91c9ce",speed:.14},{r:6.5,c:"#7796d0",speed:.11}];
+ const start=performance.now(),cx=w*.5,cy=h*.52,max=Math.min(w*.43,h*.42);
+ const frame=now=>{if(!c.isConnected)return;const time=reduced?0:(now-start)/1000;ctx.clearRect(0,0,w,h);
+ const neb=ctx.createRadialGradient(cx,cy,0,cx,cy,max*1.7);neb.addColorStop(0,"rgba(80,91,177,.18)");neb.addColorStop(1,"rgba(8,13,29,0)");ctx.fillStyle=neb;ctx.fillRect(0,0,w,h);
+ for(let i=0;i<115;i++){const x=(i*97.13)%w,y=(i*53.71)%h;ctx.fillStyle="rgba(214,225,255,"+(.2+(i%5)*.1)+")";ctx.fillRect(x,y,1,1);}
+ planets.forEach((p,i)=>{const radius=max*(.12+i*.105),angle=time*p.speed+(i*1.13);ctx.beginPath();ctx.ellipse(cx,cy,radius,radius*.38,-.12,0,Math.PI*2);ctx.strokeStyle="rgba(185,199,255,.22)";ctx.lineWidth=1;ctx.stroke();const x=cx+Math.cos(angle)*radius,y=cy+Math.sin(angle)*radius*.38;
+ if(i===5){ctx.beginPath();ctx.ellipse(x,y,p.r*1.8,p.r*.65,.25,0,Math.PI*2);ctx.strokeStyle="rgba(225,209,174,.65)";ctx.lineWidth=2;ctx.stroke();}
+ const shade=ctx.createRadialGradient(x-p.r*.35,y-p.r*.4,0,x,y,p.r*1.4);shade.addColorStop(0,"#fff");shade.addColorStop(.25,p.c);shade.addColorStop(1,"#11182c");ctx.fillStyle=shade;ctx.beginPath();ctx.arc(x,y,p.r,0,Math.PI*2);ctx.fill();});
+ const sun=ctx.createRadialGradient(cx,cy,1,cx,cy,31);sun.addColorStop(0,"#fff8d9");sun.addColorStop(.18,"#ffe0a1");sun.addColorStop(.45,"rgba(255,175,91,.45)");sun.addColorStop(1,"rgba(255,154,81,0)");ctx.fillStyle=sun;ctx.beginPath();ctx.arc(cx,cy,31,0,Math.PI*2);ctx.fill();ctx.fillStyle="#fff5d5";ctx.beginPath();ctx.arc(cx,cy,7,0,Math.PI*2);ctx.fill();
+ if(!reduced)state.systemRAF=requestAnimationFrame(frame);
+ };frame(performance.now());
+}
+function renderGalaxy(){const s=state.selected;shell(`<main class="detail"><button class="back" data-action="home">← ${t("back")}</button><div class="galaxy-head"><div class="planet-orb"></div><div><div class="eyebrow">GALAXY · ${esc(s.id)}</div><h1>${esc(s.title||"Untitled signal")}</h1><p>${esc(s.content)}</p><small>${esc(s.nickname)} · ${fmt(s.created_at)}</small></div></div><section class="solar-system-panel"><div class="system-heading"><div class="eyebrow">SOLAR SYSTEM · ORBITAL VIEW</div><span>8 PLANETS · LIVE MODEL</span></div><canvas id="solar-system" aria-label="Animated model of a solar system with a central sun and eight orbiting planets"></canvas><p class="system-note">A living orbital model. Your private planets and conversations are listed below.</p></section><div class="detail-actions"><button class="secondary" data-action="reply-open">${t("reply")}</button><button class="secondary" data-action="planet-open">${t("createPlanet")}</button><button class="quiet" data-action="report-star">${t("report")}</button>${state.nx.tok.get("star",s.id)?`<button class="quiet" data-action="edit-star">${t("edit")}</button><button class="quiet danger" data-action="archive">${t("archive")}</button>`:""}</div><section class="detail-section"><h2>${t("replies")} <span>${state.replies.length}</span></h2><div class="reply-list">${state.replies.map(r=>`<article class="reply"><div><b>${esc(r.nickname)}</b><small>${fmt(r.created_at)}</small></div><p>${esc(r.content)}</p><div class="reply-tools">${state.nx.tok.get("reply",r.id)||state.nx.tok.get("star",s.id)?`<button data-reply="${esc(r.id)}" data-status="deleted">${t("deleted")}</button><button data-reply="${esc(r.id)}" data-status="${r.status==="hidden"?"active":"hidden"}">${r.status==="hidden"?t("show"):t("hide")}</button>`:""}<button data-action="report-reply" data-id="${esc(r.id)}">${t("report")}</button></div></article>`).join("")||`<div class="empty">${t("noReplies")}</div>`}</div></section><section class="detail-section"><h2>${t("planets")} <span>${state.planets.length}</span></h2><div class="planet-list">${state.planets.map(p=>`<button class="planet-card" data-planet="${esc(p.id)}"><span class="mini-orb"></span><b>${esc(p.name)}</b><small>${esc(p.nickname)}</small><span>↗</span></button>`).join("")||`<div class="empty">No planets discovered yet.</div>`}</div></section></main>`);drawSolarSystem();}
 function modal(title,body){const old=$("#modal");if(old)old.remove();app.insertAdjacentHTML("beforeend",`<div class="modal-backdrop" id="modal"><section class="modal"><button class="modal-x" data-action="modal-close">×</button><div class="eyebrow">NEXUS</div><h2>${title}</h2>${body}</section></div>`);}
 function field(label,name,placeholder,required=true,kind="text"){return `<label>${label}<input name="${name}" type="${kind}" placeholder="${placeholder}" ${required?"required":""}></label>`;}
 function createStarModal(){modal(t("create"),`<form id="star-form" class="form">${field(t("nickname"),"nickname","MZ NEXUS")}${field(t("starTitle"),"title","A thought beyond time",false)}<label>${t("message")}<textarea name="content" required maxlength="10000"></textarea></label><button class="primary">${t("launch")}</button></form>`);}
@@ -83,5 +95,5 @@ app.addEventListener("submit",async e=>{e.preventDefault();try{const id=e.target
 function reportModal(type,id){modal(t("report"),`<form id="report-form" class="form"><input type="hidden" name="type" value="${type}"><input type="hidden" name="target" value="${esc(id)}">${field(t("nickname"),"nickname","Anonymous",false)}<label>${t("reason")}<textarea name="reason" required maxlength="500"></textarea></label><button class="primary">${t("submit")}</button></form>`);}
 async function doSearch(){const q=$("#search")?.value.trim();if(!q)return;state.query=q;try{const r=await state.nx.search(q);const items=(r.stars||[]).map(s=>`<button class="star-card" data-star="${esc(s.id)}"><span class="star-dot"></span><span class="card-title">${esc(s.title||"Untitled signal")}</span><span class="card-body">${esc(s.snippet)}</span><span class="card-meta">${esc(s.nickname)}</span></button>`);$("#signal-grid").innerHTML=items.join("")||`<div class="empty">${t("nothing")}</div>`;}catch(e){toast(e.message);}}
 app.addEventListener("change",async e=>{if(e.target.id==="import-tokens"){try{const obj=JSON.parse(await e.target.files[0].text());if(!obj||typeof obj!=="object"||Array.isArray(obj))throw new Error("Invalid token file");const current=JSON.parse(localStorage.getItem("nexus:tokens:v1")||"{}");localStorage.setItem("nexus:tokens:v1",JSON.stringify({...current,...obj}));toast("Access tokens imported.");$("#modal").remove();}catch(err){toast(err.message);}}});
-window.addEventListener("resize",()=>drawUniverse());
+window.addEventListener("resize",()=>{drawUniverse();drawSolarSystem();});
 init();
