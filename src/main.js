@@ -25,47 +25,65 @@ function starCard(s,i){return `<button class="star-card" data-star="${esc(s.id)}
 function drawUniverse(){
  const c=$("#universe");if(!c)return;
  if(state.universeRAF)cancelAnimationFrame(state.universeRAF);
- const ctx=c.getContext("2d");
+ const ctx=c.getContext("2d");if(!ctx)return;
+ const reduced=window.matchMedia("(prefers-reduced-motion: reduce)").matches;
  const dpr=Math.min(window.devicePixelRatio||1,2);
  const w=c.clientWidth,h=c.clientHeight;
- c.width=Math.max(1,Math.floor(w*dpr));c.height=Math.max(1,Math.floor(h*dpr));
+ if(!w||!h)return;
+ c.width=Math.floor(w*dpr);c.height=Math.floor(h*dpr);
  ctx.setTransform(dpr,0,0,dpr,0,0);
- let seed=42;
+ let seed=2026;
  const rand=()=>{seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;};
- const dust=Array.from({length:230},()=>({x:rand()*w,y:rand()*h,r:rand()*1.5+.35,phase:rand()*Math.PI*2,speed:.7+rand()*1.5}));
- const bodies=state.stars.slice(0,35).map((s,i)=>({x:(.12+((s.seed||i*.17)*.77%1))*w,y:(.12+((s.seed*1.71||i*.23)*.72%1))*h,r:2.4+(i%4)*.7,phase:i*.8}));
+ const dust=Array.from({length:300},()=>({x:rand()*w,y:rand()*h,r:.35+rand()*1.35,a:.18+rand()*.7,p:rand()*6.28,s:.3+rand()*1.1}));
+ const stars=state.stars.slice(0,48).map((s,i)=>({x:.1+rand()*.8,y:.1+rand()*.8,r:1.4+(i%4)*.55,p:rand()*6.28}));
+ const shooting={active:false,x:0,y:0,vx:0,vy:0,life:0,max:0};
+ let nextShoot=performance.now()+1800+rand()*3000;
+ let pointer={x:0,y:0};
+ const move=e=>{const r=c.getBoundingClientRect();pointer.x=(e.clientX-r.left)/r.width-.5;pointer.y=(e.clientY-r.top)/r.height-.5;};
+ c.addEventListener("pointermove",move,{passive:true});
+ c.addEventListener("pointerleave",()=>{pointer.x=0;pointer.y=0;},{passive:true});
  const started=performance.now();
  const frame=now=>{
-  if(!c.isConnected)return;
-  const time=(now-started)/1000;
+  if(!c.isConnected){c.removeEventListener("pointermove",move);return;}
+  const time=reduced?0:(now-started)/1000;
   ctx.clearRect(0,0,w,h);
+  const ox=pointer.x*9,oy=pointer.y*7;
+  const glow=ctx.createRadialGradient(w*.5+ox,h*.48+oy,2,w*.5+ox,h*.48+oy,Math.max(w,h)*.56);
+  glow.addColorStop(0,"rgba(95,112,220,.16)");glow.addColorStop(.55,"rgba(67,83,166,.055)");glow.addColorStop(1,"rgba(8,12,30,0)");
+  ctx.fillStyle=glow;ctx.fillRect(0,0,w,h);
   for(const p of dust){
-   const twinkle=.45+.55*(.5+.5*Math.sin(time*p.speed+p.phase));
-   const radius=p.r*(.8+.3*Math.sin(time*1.3+p.phase));
-   ctx.beginPath();ctx.arc(p.x,p.y,radius,0,Math.PI*2);
-   ctx.fillStyle=`rgba(180,195,255,${twinkle})`;ctx.fill();
+   const tw=.48+.52*(.5+.5*Math.sin(time*p.s+p.p));
+   ctx.beginPath();ctx.arc(p.x+ox*.15,p.y+oy*.15,p.r*(.8+.2*tw),0,Math.PI*2);
+   ctx.fillStyle=`rgba(196,211,255,${p.a*tw})`;ctx.fill();
   }
-  for(const p of bodies){
-   const pulse=.75+.35*Math.sin(time*1.7+p.phase);
-   ctx.beginPath();ctx.arc(p.x,p.y,p.r*4*pulse,0,Math.PI*2);
-   ctx.fillStyle="rgba(128,150,255,.07)";ctx.fill();
-   ctx.beginPath();ctx.arc(p.x,p.y,p.r*pulse,0,Math.PI*2);
-   ctx.fillStyle="#dbe3ff";ctx.shadowBlur=18;ctx.shadowColor="#a5b4fc";ctx.fill();ctx.shadowBlur=0;
+  // Elliptical orbital paths and moving luminous bodies.
+  for(let i=0;i<3;i++){
+   const rx=w*(.17+i*.105),ry=h*(.13+i*.105),angle=time*(i%2?-.12:.095)+i*.8;
+   ctx.beginPath();ctx.ellipse(w/2+ox,h/2+oy,rx,ry,angle*.12,0,Math.PI*2);
+   ctx.strokeStyle=i===1?"rgba(153,170,255,.18)":"rgba(153,170,255,.09)";ctx.lineWidth=1;ctx.stroke();
+   const a=angle+i*1.7,x=w/2+ox+Math.cos(a)*rx,y=h/2+oy+Math.sin(a)*ry;
+   const halo=ctx.createRadialGradient(x,y,0,x,y,20);
+   halo.addColorStop(0,"rgba(201,220,255,.85)");halo.addColorStop(.18,"rgba(142,160,255,.34)");halo.addColorStop(1,"rgba(142,160,255,0)");
+   ctx.fillStyle=halo;ctx.beginPath();ctx.arc(x,y,20,0,Math.PI*2);ctx.fill();
+   ctx.fillStyle="#f1f5ff";ctx.beginPath();ctx.arc(x,y,2.1+(i*.25),0,Math.PI*2);ctx.fill();
   }
-  // Two visible orbiting particles make the universe move even when no stars exist yet.
-  for(let i=0;i<2;i++){
-   const angle=time*(i===0?.42:-.29)+i*Math.PI;
-   const rx=w*(i===0?.29:.39),ry=h*(i===0?.19:.28);
-   const x=w/2+Math.cos(angle)*rx,y=h/2+Math.sin(angle)*ry;
-   const tailX=w/2+Math.cos(angle-.12)*rx,tailY=h/2+Math.sin(angle-.12)*ry;
-   const gradient=ctx.createLinearGradient(tailX,tailY,x,y);
-   gradient.addColorStop(0,"rgba(135,155,255,0)");gradient.addColorStop(1,"rgba(190,220,255,.9)");
-   ctx.beginPath();ctx.moveTo(tailX,tailY);ctx.lineTo(x,y);ctx.strokeStyle=gradient;ctx.lineWidth=i===0?2:1.4;ctx.stroke();
-   ctx.beginPath();ctx.arc(x,y,i===0?2.8:2,0,Math.PI*2);ctx.fillStyle="#eef3ff";ctx.shadowBlur=16;ctx.shadowColor="#a5b4fc";ctx.fill();ctx.shadowBlur=0;
+  for(const p of stars){
+   const x=p.x*w+ox*.3,y=p.y*h+oy*.3,r=p.r*(.78+.32*(.5+.5*Math.sin(time*1.7+p.p)));
+   ctx.beginPath();ctx.arc(x,y,r*4,0,Math.PI*2);ctx.fillStyle="rgba(142,160,255,.045)";ctx.fill();
+   ctx.beginPath();ctx.arc(x,y,r,0,Math.PI*2);ctx.fillStyle="#e5ebff";ctx.shadowBlur=13;ctx.shadowColor="#aabaff";ctx.fill();ctx.shadowBlur=0;
   }
-  state.universeRAF=requestAnimationFrame(frame);
+  if(!reduced&&now>nextShoot&&!shooting.active){shooting.active=true;shooting.x=rand()*w*.8+w*.1;shooting.y=rand()*h*.45;shooting.vx=5+rand()*3;shooting.vy=2+rand()*2;shooting.life=0;shooting.max=42;nextShoot=now+2600+rand()*4200;}
+  if(shooting.active){
+   shooting.x+=shooting.vx;shooting.y+=shooting.vy;shooting.life++;
+   const alpha=Math.max(0,1-shooting.life/shooting.max);
+   const tail=ctx.createLinearGradient(shooting.x-65,shooting.y-26,shooting.x,shooting.y);
+   tail.addColorStop(0,"rgba(165,190,255,0)");tail.addColorStop(1,`rgba(218,231,255,${alpha})`);
+   ctx.beginPath();ctx.moveTo(shooting.x-65,shooting.y-26);ctx.lineTo(shooting.x,shooting.y);ctx.strokeStyle=tail;ctx.lineWidth=2;ctx.stroke();
+   if(shooting.life>=shooting.max)shooting.active=false;
+  }
+  if(!reduced)state.universeRAF=requestAnimationFrame(frame);
  };
- state.universeRAF=requestAnimationFrame(frame);
+ frame(performance.now());
 }
 function renderGalaxy(){const s=state.selected;shell(`<main class="detail"><button class="back" data-action="home">← ${t("back")}</button><div class="galaxy-head"><div class="planet-orb"></div><div><div class="eyebrow">GALAXY · ${esc(s.id)}</div><h1>${esc(s.title||"Untitled signal")}</h1><p>${esc(s.content)}</p><small>${esc(s.nickname)} · ${fmt(s.created_at)}</small></div></div><div class="detail-actions"><button class="secondary" data-action="reply-open">${t("reply")}</button><button class="secondary" data-action="planet-open">${t("createPlanet")}</button><button class="quiet" data-action="report-star">${t("report")}</button>${state.nx.tok.get("star",s.id)?`<button class="quiet" data-action="edit-star">${t("edit")}</button><button class="quiet danger" data-action="archive">${t("archive")}</button>`:""}</div><section class="detail-section"><h2>${t("replies")} <span>${state.replies.length}</span></h2><div class="reply-list">${state.replies.map(r=>`<article class="reply"><div><b>${esc(r.nickname)}</b><small>${fmt(r.created_at)}</small></div><p>${esc(r.content)}</p><div class="reply-tools">${state.nx.tok.get("reply",r.id)||state.nx.tok.get("star",s.id)?`<button data-reply="${esc(r.id)}" data-status="deleted">${t("deleted")}</button><button data-reply="${esc(r.id)}" data-status="${r.status==="hidden"?"active":"hidden"}">${r.status==="hidden"?t("show"):t("hide")}</button>`:""}<button data-action="report-reply" data-id="${esc(r.id)}">${t("report")}</button></div></article>`).join("")||`<div class="empty">${t("noReplies")}</div>`}</div></section><section class="detail-section"><h2>${t("planets")} <span>${state.planets.length}</span></h2><div class="planet-list">${state.planets.map(p=>`<button class="planet-card" data-planet="${esc(p.id)}"><span class="mini-orb"></span><b>${esc(p.name)}</b><small>${esc(p.nickname)}</small><span>↗</span></button>`).join("")||`<div class="empty">No planets discovered yet.</div>`}</div></section></main>`);}
 function modal(title,body){const old=$("#modal");if(old)old.remove();app.insertAdjacentHTML("beforeend",`<div class="modal-backdrop" id="modal"><section class="modal"><button class="modal-x" data-action="modal-close">×</button><div class="eyebrow">NEXUS</div><h2>${title}</h2>${body}</section></div>`);}
